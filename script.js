@@ -1,27 +1,27 @@
 const BOARD_BORDER_COLOR = "black";
-const board_background = "pink";
-const snake_col = "yellow";
-const snake_border = "darkblue";
+const BOARD_BACKGROUD = "pink";
+const SNAKE_COLOR = "yellow";
+const SNAKE_BORDER_COLOR = "darkblue";
 
-let snake = [
-  { x: 200, y: 200 },
-  { x: 190, y: 200 },
-  { x: 180, y: 200 },
-  { x: 170, y: 200 },
-  { x: 160, y: 200 },
-];
+const snake = {
+  body: [
+    { x: 200, y: 200 }, // the first element is the head
+    { x: 190, y: 200 },
+    { x: 180, y: 200 },
+    { x: 170, y: 200 },
+    { x: 160, y: 200 },
+  ],
+  dx: 10, // Horizontal velocity
+  dy: 0, // Vertical velocity
+  changing_direction: false,
+  getNextPosition: (snake) => {
+    return { x: snake.body[0].x + snake.dx, y: snake.body[0].y + snake.dy };
+  },
+};
 
 let score = 0;
-// True if changing direction
-let changing_direction = false;
 
-const food={x:0, y:0}
-let food_x;
-let food_y;
-// Horizontal velocity
-let dx = 10;
-// Vertical velocity
-let dy = 0;
+const food = { x: 0, y: 0 };
 
 // Get the canvas element
 const snakeboard = document.getElementById("snakeboard");
@@ -38,8 +38,9 @@ document.addEventListener("keydown", change_direction);
 function main() {
   if (has_game_ended()) return;
 
-  changing_direction = false;
+  snake.changing_direction = false;
   setTimeout(function onTick() {
+    const nextPosition = snake.getNextPosition(snake);
     clear_board();
     drawFood();
     move_snake();
@@ -52,7 +53,7 @@ function main() {
 // draw a border around the canvas
 function clear_board() {
   //  Select the colour to fill the drawing
-  snakeboard_ctx.fillStyle = board_background;
+  snakeboard_ctx.fillStyle = BOARD_BACKGROUD;
   //  Select the colour for the border of the canvas
   snakeboard_ctx.strokestyle = BOARD_BORDER_COLOR;
   // Draw a "filled" rectangle to cover the entire canvas
@@ -64,22 +65,22 @@ function clear_board() {
 // Draw the snake on the canvas
 function drawSnake() {
   // Draw each part
-  snake.forEach(drawSnakePart);
+  snake.body.forEach(drawSnakePart);
 }
 
 function drawFood() {
   snakeboard_ctx.fillStyle = "lightgreen";
   snakeboard_ctx.strokestyle = "darkgreen";
-  snakeboard_ctx.fillRect(food_x, food_y, 10, 10);
-  snakeboard_ctx.strokeRect(food_x, food_y, 10, 10);
+  snakeboard_ctx.fillRect(food.x, food.y, 10, 10);
+  snakeboard_ctx.strokeRect(food.x, food.y, 10, 10);
 }
 
 // Draw one snake part
 function drawSnakePart(snakePart) {
   // Set the colour of the snake part
-  snakeboard_ctx.fillStyle = snake_col;
+  snakeboard_ctx.fillStyle = SNAKE_COLOR;
   // Set the border colour of the snake part
-  snakeboard_ctx.strokestyle = snake_border;
+  snakeboard_ctx.strokestyle = SNAKE_BORDER_COLOR;
   // Draw a "filled" rectangle to represent the snake part at the coordinates
   // the part is located
   snakeboard_ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
@@ -88,13 +89,17 @@ function drawSnakePart(snakePart) {
 }
 
 function has_game_ended() {
-  for (let i = 4; i < snake.length; i++) {
-    if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
+  for (let i = 4; i < snake.body.length; i++) {
+    if (
+      snake.body[i].x === snake.body[0].x &&
+      snake.body[i].y === snake.body[0].y
+    )
+      return true;
   }
-  const hitLeftWall = snake[0].x < 0;
-  const hitRightWall = snake[0].x > snakeboard.width - 10;
-  const hitToptWall = snake[0].y < 0;
-  const hitBottomWall = snake[0].y > snakeboard.height - 10;
+  const hitLeftWall = snake.body[0].x < 0;
+  const hitRightWall = snake.body[0].x > snakeboard.width - 10;
+  const hitToptWall = snake.body[0].y < 0;
+  const hitBottomWall = snake.body[0].y > snakeboard.height - 10;
   return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
 }
 
@@ -104,12 +109,12 @@ function random_food(min, max) {
 
 function gen_food() {
   // Generate a random number the food x-coordinate
-  food_x = random_food(0, snakeboard.width - 10);
+  food.x = random_food(0, snakeboard.width - 10);
   // Generate a random number for the food y-coordinate
-  food_y = random_food(0, snakeboard.height - 10);
+  food.y = random_food(0, snakeboard.height - 10);
   // if the new food location is where the snake currently is, generate a new food location
-  snake.forEach(function has_snake_eaten_food(part) {
-    const has_eaten = part.x == food_x && part.y == food_y;
+  snake.body.forEach(function has_snake_eaten_food(part) {
+    const has_eaten = part.x == food.x && part.y == food.y;
     if (has_eaten) gen_food();
   });
 }
@@ -122,37 +127,41 @@ function change_direction(event) {
 
   // Prevent the snake from reversing
 
-  if (changing_direction) return;
-  changing_direction = true;
+  if (snake.changing_direction) return;
+  snake.changing_direction = true;
   const keyPressed = event.keyCode;
-  const goingUp = dy === -10;
-  const goingDown = dy === 10;
-  const goingRight = dx === 10;
-  const goingLeft = dx === -10;
+  const goingUp = snake.dy === -10;
+  const goingDown = snake.dy === 10;
+  const goingRight = snake.dx === 10;
+  const goingLeft = snake.dx === -10;
   if (keyPressed === LEFT_KEY && !goingRight) {
-    dx = -10;
-    dy = 0;
+    snake.dx = -10;
+    snake.dy = 0;
   }
   if (keyPressed === UP_KEY && !goingDown) {
-    dx = 0;
-    dy = -10;
+    snake.dx = 0;
+    snake.dy = -10;
   }
   if (keyPressed === RIGHT_KEY && !goingLeft) {
-    dx = 10;
-    dy = 0;
+    snake.dx = 10;
+    snake.dy = 0;
   }
   if (keyPressed === DOWN_KEY && !goingUp) {
-    dx = 0;
-    dy = 10;
+    snake.dx = 0;
+    snake.dy = 10;
   }
 }
 
 function move_snake() {
   // Create the new Snake's head
-  const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+  const headNewPosition = {
+    x: snake.body[0].x + snake.dx,
+    y: snake.body[0].y + snake.dy,
+  };
   // Add the new head to the beginning of snake body
-  snake.unshift(head);
-  const has_eaten_food = snake[0].x === food_x && snake[0].y === food_y;
+  snake.body.unshift(headNewPosition);
+  const has_eaten_food =
+    snake.body[0].x === food.x && snake.body[0].y === food.y;
   if (has_eaten_food) {
     // Increase score
     score += 10;
@@ -162,6 +171,6 @@ function move_snake() {
     gen_food();
   } else {
     // Remove the last part of snake body
-    snake.pop();
+    snake.body.pop();
   }
 }
