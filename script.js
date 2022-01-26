@@ -13,13 +13,17 @@ const snake = {
   ],
   dx: 10, // Horizontal velocity
   dy: 0, // Vertical velocity
-  changing_direction: false,
+  lockMoovment: false,
   getNextPosition: (snake) => {
     return { x: snake.body[0].x + snake.dx, y: snake.body[0].y + snake.dy };
   },
+  move_snake: (snake, nextPosition) => {
+    snake.body.unshift(nextPosition);
+  },
 };
 
-let score = 0;
+const score = { points: 0 };
+let speed = 1;
 
 const food = { x: 0, y: 0 };
 
@@ -28,26 +32,28 @@ const snakeboard = document.getElementById("snakeboard");
 // Return a two dimensional drawing context
 const snakeboard_ctx = snakeboard.getContext("2d");
 // Start game
-main();
-
-gen_food();
+gen_food(food, snake);
+run(snake.getNextPosition(snake));
 
 document.addEventListener("keydown", change_direction);
 
 // main function called repeatedly to keep the game running
-function main() {
-  if (has_game_ended()) return;
+function run(nextPosition) {
+  if (has_game_ended(nextPosition)) return;
 
-  snake.changing_direction = false;
-  setTimeout(function onTick() {
-    const nextPosition = snake.getNextPosition(snake);
-    clear_board();
-    drawFood();
-    move_snake();
-    drawSnake();
-    // Repeat
-    main();
-  }, 100);
+  setTimeout(
+    function onTick() {
+      snake.lockMoovment = false;
+      clear_board();
+      snake.move_snake(snake, nextPosition);
+      has_eaten_food(snake, food, score);
+      drawFood();
+      drawSnake();
+      // Repeat
+      run(snake.getNextPosition(snake));
+    },
+    110 - 5 * speed > 50 ? 110 - 5 * speed : 50
+  );
 }
 
 // draw a border around the canvas
@@ -88,30 +94,30 @@ function drawSnakePart(snakePart) {
   snakeboard_ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
 }
 
-function has_game_ended() {
+function has_game_ended(nextPosition) {
   for (let i = 4; i < snake.body.length; i++) {
     if (
-      snake.body[i].x === snake.body[0].x &&
-      snake.body[i].y === snake.body[0].y
+      snake.body[i].x === nextPosition.x &&
+      snake.body[i].y === nextPosition.y
     )
       return true;
   }
-  const hitLeftWall = snake.body[0].x < 0;
-  const hitRightWall = snake.body[0].x > snakeboard.width - 10;
-  const hitToptWall = snake.body[0].y < 0;
-  const hitBottomWall = snake.body[0].y > snakeboard.height - 10;
+  const hitLeftWall = nextPosition.x < 0;
+  const hitRightWall = nextPosition.x > snakeboard.width - 10;
+  const hitToptWall = nextPosition.y < 0;
+  const hitBottomWall = nextPosition.y > snakeboard.height - 10;
   return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall;
 }
 
-function random_food(min, max) {
+function random_coord(min, max) {
   return Math.round((Math.random() * (max - min) + min) / 10) * 10;
 }
 
-function gen_food() {
+function gen_food(food, snake) {
   // Generate a random number the food x-coordinate
-  food.x = random_food(0, snakeboard.width - 10);
+  food.x = random_coord(0, snakeboard.width - 10);
   // Generate a random number for the food y-coordinate
-  food.y = random_food(0, snakeboard.height - 10);
+  food.y = random_coord(0, snakeboard.height - 10);
   // if the new food location is where the snake currently is, generate a new food location
   snake.body.forEach(function has_snake_eaten_food(part) {
     const has_eaten = part.x == food.x && part.y == food.y;
@@ -127,8 +133,8 @@ function change_direction(event) {
 
   // Prevent the snake from reversing
 
-  if (snake.changing_direction) return;
-  snake.changing_direction = true;
+  if (snake.lockMoovment) return;
+  snake.lockMoovment = true;
   const keyPressed = event.keyCode;
   const goingUp = snake.dy === -10;
   const goingDown = snake.dy === 10;
@@ -152,21 +158,33 @@ function change_direction(event) {
   }
 }
 
-function move_snake() {
-  // Create the new Snake's head
-  const headNewPosition = {
-    x: snake.body[0].x + snake.dx,
-    y: snake.body[0].y + snake.dy,
-  };
+function has_eaten_food(snake, food, score) {
+  const has_eaten_food =
+    snake.body[0].x === food.x && snake.body[0].y === food.y;
+  if (!has_eaten_food) {
+    // Remove the last part of snake body
+    snake.body.pop();
+    return;
+  }
+  // Increase score
+  score.points += 10;
+  speed++;
+  // Display score on screen
+  document.getElementById("score").innerHTML = score.points;
+  // Generate new food location
+  gen_food(food, snake);
+}
+
+function move_snake(nextPosition) {
   // Add the new head to the beginning of snake body
-  snake.body.unshift(headNewPosition);
+  snake.body.unshift(nextPosition);
   const has_eaten_food =
     snake.body[0].x === food.x && snake.body[0].y === food.y;
   if (has_eaten_food) {
     // Increase score
-    score += 10;
+    score.points += 10;
     // Display score on screen
-    document.getElementById("score").innerHTML = score;
+    document.getElementById("score").innerHTML = score.points;
     // Generate new food location
     gen_food();
   } else {
