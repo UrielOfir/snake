@@ -14,11 +14,11 @@ const snake = {
   dx: 10, // Horizontal velocity
   dy: 0, // Vertical velocity
   lockMoovment: false,
-  getNextPosition: (snake) => {
-    return { x: snake.body[0].x + snake.dx, y: snake.body[0].y + snake.dy };
+  getNextPosition() {
+    return { x: this.body[0].x + this.dx, y: this.body[0].y + this.dy };
   },
-  move_snake: (snake, nextPosition) => {
-    snake.body.unshift(nextPosition);
+  move_snake(nextPosition) {
+    this.body.unshift(nextPosition);
   },
 };
 
@@ -39,14 +39,13 @@ document.addEventListener("keydown", change_direction);
 
 // main function called repeatedly to keep the game running
 function run(nextPosition) {
-  if (has_game_ended(nextPosition)) return;
-
   setTimeout(
     function onTick() {
       snake.lockMoovment = false;
-      clear_board();
-      snake.move_snake(snake, nextPosition);
+      snake.move_snake(nextPosition);
+      if (has_game_ended(nextPosition)) return;
       has_eaten_food(snake, food, score);
+      clear_board();
       drawFood();
       drawSnake();
       // Repeat
@@ -178,17 +177,4 @@ function has_eaten_food(snake, food, score) {
 function move_snake(nextPosition) {
   // Add the new head to the beginning of snake body
   snake.body.unshift(nextPosition);
-  const has_eaten_food =
-    snake.body[0].x === food.x && snake.body[0].y === food.y;
-  if (has_eaten_food) {
-    // Increase score
-    score.points += 10;
-    // Display score on screen
-    document.getElementById("score").innerHTML = score.points;
-    // Generate new food location
-    gen_food();
-  } else {
-    // Remove the last part of snake body
-    snake.body.pop();
-  }
 }
