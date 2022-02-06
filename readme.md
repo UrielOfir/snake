@@ -10,6 +10,7 @@ I refactor the code and added new features.
 ## How to run the code?
 
 To run the code you need to download it and run the html file in your web browser.
+Or click this link- https://urielofir.github.io/snake/.
 
 
 > Written with [StackEdit](https://stackedit.io/).
